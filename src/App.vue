@@ -5,7 +5,7 @@
         <div class="header-content">
           <div class="logo">
             <i class="pi pi-home"></i>
-            <h1>KrishaAstana</h1>
+            <h1>onaiÜI</h1>
           </div>
           <p class="header-subtitle">Поиск квартир в Астане</p>
         </div>
@@ -46,11 +46,10 @@
 
     <footer class="app-footer">
       <div class="container">
-        <p>© 2024 KrishaAstana. Тестовое задание "Фильтры"</p>
+        <p>© 2026 onaiÜI. Тестовое задание "Фильтры"</p>
       </div>
     </footer>
 
-    <!-- Модальное окно деталей -->
     <div v-if="selectedProperty" class="modal-overlay" @click="selectedProperty = null">
       <div class="modal-content" @click.stop>
         <button class="modal-close" @click="selectedProperty = null">
@@ -100,7 +99,6 @@ const activeFilters = ref({
   addressQuery: ''
 })
 
-// Загрузка данных
 onMounted(async () => {
   try {
     const response = await fetch('/db.json')
@@ -113,17 +111,14 @@ onMounted(async () => {
   }
 })
 
-// Фильтрация с debounce
 const updateFilters = debounce((filters) => {
   activeFilters.value = filters
 }, 300)
 
-// Отфильтрованные свойства
 const filteredProperties = computed(() => {
   if (!properties.value.length) return []
 
   return properties.value.filter(property => {
-    // Фильтр по площади
     if (activeFilters.value.areaMin !== null && property.area < activeFilters.value.areaMin) {
       return false
     }
@@ -131,7 +126,6 @@ const filteredProperties = computed(() => {
       return false
     }
 
-    // Фильтр по комнатам
     if (activeFilters.value.roomsMin !== null && property.rooms < activeFilters.value.roomsMin) {
       return false
     }
@@ -139,7 +133,6 @@ const filteredProperties = computed(() => {
       return false
     }
 
-    // Фильтр по адресу
     if (activeFilters.value.addressQuery &&
         !property.address.toLowerCase().includes(activeFilters.value.addressQuery)) {
       return false
@@ -149,17 +142,14 @@ const filteredProperties = computed(() => {
   })
 })
 
-// Форматирование цены
 const formatPrice = (price) => {
   return new Intl.NumberFormat('ru-RU').format(price) + ' ₸'
 }
 
-// Показать детали
 const showPropertyDetails = (property) => {
   selectedProperty.value = property
 }
 
-// Сброс всех фильтров
 const resetAllFilters = () => {
   activeFilters.value = {
     areaMin: null,

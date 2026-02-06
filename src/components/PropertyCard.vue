@@ -1,12 +1,16 @@
 <template>
-  <div class="property-card">
+  <article class="property-card">
     <div class="card-image">
-      <img :src="property.image" :alt="property.address" loading="lazy" />
+      <img
+          :src="property.image"
+          :alt="`Квартира по адресу: ${property.address}`"
+          loading="lazy"
+      />
       <div class="card-badge">
         {{ property.rooms }} комн.
       </div>
       <div class="price-tag">
-        {{ formatPrice(property.price) }}
+        {{ formattedPrice }}
       </div>
     </div>
 
@@ -27,38 +31,74 @@
       <p class="card-description">{{ property.description }}</p>
 
       <div class="card-actions">
-        <button class="btn-view" @click="viewDetails">
+        <button
+            class="btn-view"
+            @click="handleViewDetails"
+            aria-label="Посмотреть подробности о квартире"
+        >
           <i class="pi pi-eye"></i> Подробнее
         </button>
-        <button class="btn-contact">
+        <button
+            class="btn-contact"
+            aria-label="Позвонить по поводу квартиры"
+        >
           <i class="pi pi-phone"></i> Позвонить
         </button>
       </div>
     </div>
-  </div>
+  </article>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   property: {
     type: Object,
-    required: true
+    required: true,
+    validator(value) {
+      return (
+          typeof value.address === 'string' &&
+          typeof value.area === 'number' &&
+          typeof value.rooms === 'number' &&
+          typeof value.price === 'number' &&
+          typeof value.image === 'string' &&
+          typeof value.description === 'string'
+      )
+    }
   }
 })
 
 const emit = defineEmits(['view-details'])
 
-const formatPrice = (price) => {
-  return new Intl.NumberFormat('ru-RU').format(price) + ' ₸'
-}
+const formattedPrice = computed(() => {
+  const formatter = new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'KZT',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })
+  return formatter.format(props.property.price)
+})
 
-const viewDetails = () => {
-  emit('view-details', props.property)
+const handleViewDetails = () => {
+  emit('view-details', {
+    id: props.property.id || Date.now(),
+    ...props.property
+  })
 }
 </script>
 
 <style scoped>
 .property-card {
+  --primary-color: #3498db;
+  --secondary-color: #2ecc71;
+  --danger-color: #e74c3c;
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --border-color: #e0e6ed;
+  --background-light: #f8f9fa;
+
   background: white;
   border-radius: 16px;
   overflow: hidden;
@@ -95,26 +135,28 @@ const viewDetails = () => {
   position: absolute;
   top: 16px;
   left: 16px;
-  background: rgba(52, 152, 219, 0.95);
+  background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.95);
   color: white;
   padding: 6px 14px;
   border-radius: 20px;
   font-weight: 600;
   font-size: 0.9rem;
   backdrop-filter: blur(4px);
+  z-index: 1;
 }
 
 .price-tag {
   position: absolute;
   bottom: 16px;
   right: 16px;
-  background: rgba(231, 76, 60, 0.95);
+  background: rgba(var(--danger-color-rgb, 231, 76, 60), 0.95);
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
   font-weight: 700;
   font-size: 1.1rem;
   backdrop-filter: blur(4px);
+  z-index: 1;
 }
 
 .card-content {
@@ -126,7 +168,7 @@ const viewDetails = () => {
 
 .card-address {
   margin: 0 0 16px 0;
-  color: #2c3e50;
+  color: var(--text-primary);
   font-size: 1.2rem;
   line-height: 1.4;
 }
@@ -136,18 +178,18 @@ const viewDetails = () => {
   gap: 24px;
   margin-bottom: 20px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #e0e6ed;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .feature {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #7f8c8d;
+  color: var(--text-secondary);
 }
 
 .feature i {
-  color: #3498db;
+  color: var(--primary-color);
 }
 
 .card-description {
@@ -155,6 +197,10 @@ const viewDetails = () => {
   line-height: 1.6;
   margin-bottom: 24px;
   flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .card-actions {
@@ -175,31 +221,35 @@ const viewDetails = () => {
   justify-content: center;
   gap: 8px;
   transition: all 0.3s ease;
+  font-family: inherit;
 }
 
 .btn-view {
-  background: #f8f9fa;
-  color: #3498db;
-  border: 2px solid #e0e6ed !important;
+  background: var(--background-light);
+  color: var(--primary-color);
+  border: 2px solid var(--border-color) !important;
 }
 
-.btn-view:hover {
-  background: #3498db;
+.btn-view:hover,
+.btn-view:focus-visible {
+  background: var(--primary-color);
   color: white;
-  border-color: #3498db !important;
+  border-color: var(--primary-color) !important;
+  outline: none;
 }
 
 .btn-contact {
-  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  background: linear-gradient(135deg, var(--secondary-color), #27ae60);
   color: white;
 }
 
-.btn-contact:hover {
+.btn-contact:hover,
+.btn-contact:focus-visible {
   background: linear-gradient(135deg, #27ae60, #219653);
   transform: translateY(-2px);
+  outline: none;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
   .card-image {
     height: 180px;
@@ -232,6 +282,28 @@ const viewDetails = () => {
   .card-features {
     flex-direction: column;
     gap: 12px;
+  }
+}
+
+.property-card:focus-within {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card-image {
+  background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+  background-size: 200% 100%;
+  animation: 1.5s shine linear infinite;
+}
+
+@keyframes shine {
+  to {
+    background-position-x: -200%;
   }
 }
 </style>

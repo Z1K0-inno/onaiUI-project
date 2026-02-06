@@ -1,9 +1,9 @@
 <template>
-  <div class="filters-container">
-    <div class="filters-header">
-      <h2>🔍 Поиск квартир в Астане</h2>
+  <section class="filters-container" aria-labelledby="filters-title">
+    <header class="filters-header">
+      <h2 id="filters-title">🔍 Поиск квартир в Астане</h2>
       <p class="subtitle">Найдите идеальную квартиру с помощью фильтров</p>
-    </div>
+    </header>
 
     <div class="filters-grid">
       <!-- Площадь -->
@@ -11,29 +11,32 @@
         <label for="area-min">Площадь, м²</label>
         <div class="range-inputs">
           <div class="input-with-icon">
-            <i class="pi pi-arrow-right"></i>
+            <i class="pi pi-arrow-right" aria-hidden="true"></i>
             <input
                 id="area-min"
-                v-model="areaMin"
+                v-model.number="filters.area.min"
                 type="number"
                 placeholder="От"
                 min="0"
-                @input="validateArea"
+                aria-label="Минимальная площадь"
+                @input="validateRange('area')"
             />
           </div>
           <div class="input-with-icon">
-            <i class="pi pi-arrow-left"></i>
+            <i class="pi pi-arrow-left" aria-hidden="true"></i>
             <input
-                v-model="areaMax"
+                id="area-max"
+                v-model.number="filters.area.max"
                 type="number"
                 placeholder="До"
                 min="0"
-                @input="validateArea"
+                aria-label="Максимальная площадь"
+                @input="validateRange('area')"
             />
           </div>
         </div>
         <div class="range-values">
-          <span>{{ areaMin || 0 }} - {{ areaMax || '∞' }} м²</span>
+          <span>{{ areaRangeText }}</span>
         </div>
       </div>
 
@@ -42,31 +45,34 @@
         <label for="rooms-min">Количество комнат</label>
         <div class="range-inputs">
           <div class="input-with-icon">
-            <i class="pi pi-home"></i>
+            <i class="pi pi-home" aria-hidden="true"></i>
             <input
                 id="rooms-min"
-                v-model="roomsMin"
+                v-model.number="filters.rooms.min"
                 type="number"
                 placeholder="От"
                 min="1"
                 max="10"
-                @input="validateRooms"
+                aria-label="Минимальное количество комнат"
+                @input="validateRange('rooms')"
             />
           </div>
           <div class="input-with-icon">
-            <i class="pi pi-home"></i>
+            <i class="pi pi-home" aria-hidden="true"></i>
             <input
-                v-model="roomsMax"
+                id="rooms-max"
+                v-model.number="filters.rooms.max"
                 type="number"
                 placeholder="До"
                 min="1"
                 max="10"
-                @input="validateRooms"
+                aria-label="Максимальное количество комнат"
+                @input="validateRange('rooms')"
             />
           </div>
         </div>
         <div class="range-values">
-          <span>{{ roomsMin || 1 }} - {{ roomsMax || '∞' }} комнат</span>
+          <span>{{ roomsRangeText }}</span>
         </div>
       </div>
 
@@ -74,16 +80,23 @@
       <div class="filter-group full-width">
         <label for="address-search">Адрес</label>
         <div class="input-with-icon search-input">
-          <i class="pi pi-search"></i>
+          <i class="pi pi-search" aria-hidden="true"></i>
           <input
               id="address-search"
-              v-model="addressQuery"
-              type="text"
+              v-model.trim="filters.address"
+              type="search"
               placeholder="Введите улицу или район..."
+              aria-label="Поиск по адресу"
               @input="sanitizeAddress"
           />
-          <button v-if="addressQuery" class="clear-btn" @click="addressQuery = ''">
-            <i class="pi pi-times"></i>
+          <button
+              v-if="filters.address"
+              type="button"
+              class="clear-btn"
+              @click="filters.address = ''"
+              aria-label="Очистить поле поиска"
+          >
+            <i class="pi pi-times" aria-hidden="true"></i>
           </button>
         </div>
       </div>
@@ -91,99 +104,130 @@
 
     <!-- Кнопки действий -->
     <div class="actions">
-      <button class="btn-primary" @click="applyFilters">
-        <i class="pi pi-search"></i> Найти квартиры
+      <button
+          type="button"
+          class="btn-primary"
+          @click="emitFilters"
+          aria-label="Применить фильтры"
+      >
+        <i class="pi pi-search" aria-hidden="true"></i> Найти квартиры
       </button>
-      <button class="btn-secondary" @click="resetFilters">
-        <i class="pi pi-refresh"></i> Сбросить фильтры
+      <button
+          type="button"
+          class="btn-secondary"
+          @click="resetFilters"
+          aria-label="Сбросить все фильтры"
+      >
+        <i class="pi pi-refresh" aria-hidden="true"></i> Сбросить фильтры
       </button>
     </div>
 
     <!-- Статистика -->
-    <div class="stats" v-if="filteredCount > 0">
+    <div v-if="filteredCount > 0" class="stats" aria-live="polite">
       <p>Найдено квартир: <strong>{{ filteredCount }}</strong></p>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { reactive, computed, watch, toRefs } from 'vue'
+
+const props = defineProps({
+  filteredCount: {
+    type: Number,
+    default: 0,
+    validator: (value) => value >= 0
+  }
+})
 
 const emit = defineEmits(['filter-change'])
 
-// Реактивные данные фильтров
-const areaMin = ref('')
-const areaMax = ref('')
-const roomsMin = ref('')
-const roomsMax = ref('')
-const addressQuery = ref('')
+const filters = reactive({
+  area: {
+    min: null,
+    max: null
+  },
+  rooms: {
+    min: null,
+    max: null
+  },
+  address: ''
+})
 
-// Валидация площади
-const validateArea = () => {
-  if (areaMin.value && areaMax.value && parseInt(areaMin.value) > parseInt(areaMax.value)) {
-    const temp = areaMin.value
-    areaMin.value = areaMax.value
-    areaMax.value = temp
+const areaRangeText = computed(() => {
+  const min = filters.area.min || 0
+  const max = filters.area.max !== null ? filters.area.max : '∞'
+  return `${min} - ${max} м²`
+})
+
+const roomsRangeText = computed(() => {
+  const min = filters.rooms.min || 1
+  const max = filters.rooms.max !== null ? filters.rooms.max : '∞'
+  return `${min} - ${max} комнат`
+})
+
+const validateRange = (type) => {
+  const range = filters[type]
+  if (range.min !== null && range.max !== null && range.min > range.max) {
+    const temp = range.min
+    range.min = range.max
+    range.max = temp
   }
 }
 
-// Валидация комнат
-const validateRooms = () => {
-  if (roomsMin.value && roomsMax.value && parseInt(roomsMin.value) > parseInt(roomsMax.value)) {
-    const temp = roomsMin.value
-    roomsMin.value = roomsMax.value
-    roomsMax.value = temp
-  }
-}
-
-// Санитизация адреса (защита от XSS)
 const sanitizeAddress = () => {
-  addressQuery.value = addressQuery.value.replace(/[<>]/g, '')
+  filters.address = filters.address.replace(/[<>]/g, '')
 }
 
-// Применить фильтры
-const applyFilters = () => {
-  const filters = {
-    areaMin: areaMin.value ? parseInt(areaMin.value) : null,
-    areaMax: areaMax.value ? parseInt(areaMax.value) : null,
-    roomsMin: roomsMin.value ? parseInt(roomsMin.value) : null,
-    roomsMax: roomsMax.value ? parseInt(roomsMax.value) : null,
-    addressQuery: addressQuery.value.toLowerCase().trim()
+const emitFilters = () => {
+  const filtersToEmit = {
+    area: { ...filters.area },
+    rooms: { ...filters.rooms },
+    address: filters.address.toLowerCase().trim()
   }
-  emit('filter-change', filters)
+  emit('filter-change', filtersToEmit)
 }
 
-// Сбросить фильтры
 const resetFilters = () => {
-  areaMin.value = ''
-  areaMax.value = ''
-  roomsMin.value = ''
-  roomsMax.value = ''
-  addressQuery.value = ''
+  filters.area.min = null
+  filters.area.max = null
+  filters.rooms.min = null
+  filters.rooms.max = null
+  filters.address = ''
+
   emit('filter-change', {
-    areaMin: null,
-    areaMax: null,
-    roomsMin: null,
-    roomsMax: null,
-    addressQuery: ''
+    area: { min: null, max: null },
+    rooms: { min: null, max: null },
+    address: ''
   })
 }
 
-// Отслеживание изменений в реальном времени
-watch([areaMin, areaMax, roomsMin, roomsMax, addressQuery], () => {
-  applyFilters()
-})
+watch(
+    () => ({ ...filters }),
+    () => {
+      emitFilters()
+    },
+    { deep: true }
+)
 
-defineProps({
-  filteredCount: {
-    type: Number,
-    default: 0
-  }
+defineExpose({
+  filters: toRefs(filters),
+  resetFilters,
+  emitFilters
 })
 </script>
 
 <style scoped>
 .filters-container {
+  --primary-color: #3498db;
+  --primary-dark: #2980b9;
+  --secondary-color: #2ecc71;
+  --danger-color: #e74c3c;
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --border-color: #e0e6ed;
+  --background-light: #f8f9fa;
+
   background: white;
   border-radius: 16px;
   padding: 24px;
@@ -196,15 +240,17 @@ defineProps({
 }
 
 .filters-header h2 {
-  color: #2c3e50;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
   font-size: 1.5rem;
+  line-height: 1.3;
 }
 
 .subtitle {
-  color: #7f8c8d;
+  color: var(--text-secondary);
   margin: 0;
   font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .filters-grid {
@@ -226,8 +272,9 @@ defineProps({
 .filter-group label {
   font-weight: 600;
   margin-bottom: 10px;
-  color: #34495e;
+  color: var(--text-primary);
   font-size: 0.95rem;
+  line-height: 1.4;
 }
 
 .range-inputs {
@@ -245,31 +292,42 @@ defineProps({
 .input-with-icon i {
   position: absolute;
   left: 12px;
-  color: #95a5a6;
-  z-index: 1;
+  color: var(--text-secondary);
+  pointer-events: none;
 }
 
 .input-with-icon input {
   width: 100%;
   padding: 12px 12px 12px 36px;
-  border: 2px solid #e0e6ed;
+  border: 2px solid var(--border-color);
   border-radius: 10px;
   font-size: 0.95rem;
   transition: all 0.3s ease;
   background: white;
+  font-family: inherit;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+}
+
+.input-with-icon input::-webkit-outer-spin-button,
+.input-with-icon input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .input-with-icon input:focus {
-  outline: none;
-  border-color: #3498db;
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
 .range-values {
   margin-top: 8px;
   text-align: center;
-  color: #7f8c8d;
+  color: var(--text-secondary);
   font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .search-input {
@@ -281,15 +339,21 @@ defineProps({
   right: 12px;
   background: none;
   border: none;
-  color: #95a5a6;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.search-input .clear-btn:hover {
-  background: #f8f9fa;
-  color: #e74c3c;
+.search-input .clear-btn:hover,
+.search-input .clear-btn:focus-visible {
+  background: var(--background-light);
+  color: var(--danger-color);
+  outline: none;
 }
 
 .actions {
@@ -311,44 +375,49 @@ defineProps({
   justify-content: center;
   gap: 10px;
   transition: all 0.3s ease;
+  font-family: inherit;
+  line-height: 1.4;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   color: white;
 }
 
-.btn-primary:hover {
-  background: linear-gradient(135deg, #2980b9, #1c5d87);
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background: linear-gradient(135deg, var(--primary-dark), #1c5d87);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
+  outline: none;
 }
 
 .btn-secondary {
   background: white;
-  color: #7f8c8d;
-  border: 2px solid #e0e6ed !important;
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color) !important;
 }
 
-.btn-secondary:hover {
-  background: #f8f9fa;
-  color: #34495e;
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  background: var(--background-light);
+  color: var(--text-primary);
+  outline: none;
 }
 
 .stats {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #e0e6ed;
+  border-top: 1px solid var(--border-color);
   text-align: center;
-  color: #2c3e50;
+  color: var(--text-primary);
 }
 
 .stats strong {
-  color: #27ae60;
+  color: var(--secondary-color);
   font-size: 1.2rem;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
   .filters-grid {
     grid-template-columns: 1fr;
@@ -374,6 +443,34 @@ defineProps({
 
   .actions button {
     padding: 12px 16px;
+    font-size: 0.95rem;
   }
+
+  .input-with-icon input {
+    padding: 10px 10px 10px 32px;
+  }
+
+  .input-with-icon i {
+    left: 10px;
+  }
+}
+
+.filters-container:focus-within {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.btn-secondary:active i {
+  animation: spin 0.5s ease;
 }
 </style>
