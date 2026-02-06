@@ -1,0 +1,76 @@
+{
+  "properties": [
+    {
+      "id": 1,
+      "address": "ул. Кабанбай батыра 12, Астана",
+      "area": 65,
+      "rooms": 2,
+      "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop",
+      "price": 45000,
+      "description": "Светлая квартира с современным ремонтом"
+    },
+    {
+      "id": 2,
+      "address": "пр. Туран 45, Астана",
+      "area": 85,
+      "rooms": 3,
+      "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w-400&h=300&fit=crop",
+      "price": 68000,
+      "description": "Просторная трехкомнатная квартира"
+    },
+    {
+      "id": 3,
+      "address": "ул. Сарайшык 7, Астана",
+      "area": 120,
+      "rooms": 4,
+      "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop",
+      "price": 95000,
+      "description": "Просторная квартира для большой семьи"
+    },
+    {
+      "id": 4,
+      "address": "пр. Казахстан 23, Астана",
+      "area": 45,
+      "rooms": 1,
+      "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop",
+      "price": 32000,
+      "description": "Уютная студия в центре города"
+    },
+    {
+      "id": 5,
+      "address": "ул. Кенесары 56, Астана",
+      "area": 75,
+      "rooms": 2,
+      "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop",
+      "price": 52000,
+      "description": "Двухкомнатная квартира с видом на парк"
+    },
+    {
+      "id": 6,
+      "address": "пр. Абая 89, Астана",
+      "area": 95,
+      "rooms": 3,
+      "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop",
+      "price": 72000,
+      "description": "Трехкомнатная квартира с евроремонтом"
+    },
+    {
+      "id": 7,
+      "address": "ул. Достык 34, Астана",
+      "area": 150,
+      "rooms": 5,
+      "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=300&fit=crop",
+      "price": 125000,
+      "description": "Просторный пентхаус с террасой"
+    },
+    {
+      "id": 8,
+      "address": "пр. Республики 67, Астана",
+      "area": 55,
+      "rooms": 1,
+      "image": "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop",
+      "price": 38000,
+      "description": "Студия в новом жилом комплексе"
+    }
+  ]
+}
