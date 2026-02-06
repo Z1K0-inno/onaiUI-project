@@ -6,7 +6,6 @@
     </header>
 
     <div class="filters-grid">
-      <!-- Площадь -->
       <div class="filter-group">
         <label for="area-min">Площадь, м²</label>
         <div class="range-inputs">
@@ -14,24 +13,22 @@
             <i class="pi pi-arrow-right" aria-hidden="true"></i>
             <input
                 id="area-min"
-                v-model.number="filters.area.min"
+                v-model.number="areaMinInput"
                 type="number"
                 placeholder="От"
                 min="0"
                 aria-label="Минимальная площадь"
-                @input="validateRange('area')"
             />
           </div>
           <div class="input-with-icon">
             <i class="pi pi-arrow-left" aria-hidden="true"></i>
             <input
                 id="area-max"
-                v-model.number="filters.area.max"
+                v-model.number="areaMaxInput"
                 type="number"
                 placeholder="До"
                 min="0"
                 aria-label="Максимальная площадь"
-                @input="validateRange('area')"
             />
           </div>
         </div>
@@ -40,7 +37,6 @@
         </div>
       </div>
 
-      <!-- Комнаты -->
       <div class="filter-group">
         <label for="rooms-min">Количество комнат</label>
         <div class="range-inputs">
@@ -48,26 +44,24 @@
             <i class="pi pi-home" aria-hidden="true"></i>
             <input
                 id="rooms-min"
-                v-model.number="filters.rooms.min"
+                v-model.number="roomsMinInput"
                 type="number"
                 placeholder="От"
                 min="1"
                 max="10"
                 aria-label="Минимальное количество комнат"
-                @input="validateRange('rooms')"
             />
           </div>
           <div class="input-with-icon">
             <i class="pi pi-home" aria-hidden="true"></i>
             <input
                 id="rooms-max"
-                v-model.number="filters.rooms.max"
+                v-model.number="roomsMaxInput"
                 type="number"
                 placeholder="До"
                 min="1"
                 max="10"
                 aria-label="Максимальное количество комнат"
-                @input="validateRange('rooms')"
             />
           </div>
         </div>
@@ -76,24 +70,22 @@
         </div>
       </div>
 
-      <!-- Адрес -->
       <div class="filter-group full-width">
         <label for="address-search">Адрес</label>
         <div class="input-with-icon search-input">
           <i class="pi pi-search" aria-hidden="true"></i>
           <input
               id="address-search"
-              v-model.trim="filters.address"
+              v-model.trim="addressInput"
               type="search"
               placeholder="Введите улицу или район..."
               aria-label="Поиск по адресу"
-              @input="sanitizeAddress"
           />
           <button
-              v-if="filters.address"
+              v-if="addressInput"
               type="button"
               class="clear-btn"
-              @click="filters.address = ''"
+              @click="addressInput = ''"
               aria-label="Очистить поле поиска"
           >
             <i class="pi pi-times" aria-hidden="true"></i>
@@ -102,12 +94,11 @@
       </div>
     </div>
 
-    <!-- Кнопки действий -->
     <div class="actions">
       <button
           type="button"
           class="btn-primary"
-          @click="emitFilters"
+          @click="applyFilters"
           aria-label="Применить фильтры"
       >
         <i class="pi pi-search" aria-hidden="true"></i> Найти квартиры
@@ -122,7 +113,6 @@
       </button>
     </div>
 
-    <!-- Статистика -->
     <div v-if="filteredCount > 0" class="stats" aria-live="polite">
       <p>Найдено квартир: <strong>{{ filteredCount }}</strong></p>
     </div>
@@ -130,7 +120,7 @@
 </template>
 
 <script setup>
-import { reactive, computed, watch, toRefs } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   filteredCount: {
@@ -142,78 +132,58 @@ const props = defineProps({
 
 const emit = defineEmits(['filter-change'])
 
-const filters = reactive({
-  area: {
-    min: null,
-    max: null
-  },
-  rooms: {
-    min: null,
-    max: null
-  },
-  address: ''
-})
+const areaMinInput = ref('')
+const areaMaxInput = ref('')
+const roomsMinInput = ref('')
+const roomsMaxInput = ref('')
+const addressInput = ref('')
 
 const areaRangeText = computed(() => {
-  const min = filters.area.min || 0
-  const max = filters.area.max !== null ? filters.area.max : '∞'
+  const min = areaMinInput.value || 0
+  const max = areaMaxInput.value !== '' ? areaMaxInput.value : '∞'
   return `${min} - ${max} м²`
 })
 
 const roomsRangeText = computed(() => {
-  const min = filters.rooms.min || 1
-  const max = filters.rooms.max !== null ? filters.rooms.max : '∞'
+  const min = roomsMinInput.value || 1
+  const max = roomsMaxInput.value !== '' ? roomsMaxInput.value : '∞'
   return `${min} - ${max} комнат`
 })
 
-const validateRange = (type) => {
-  const range = filters[type]
-  if (range.min !== null && range.max !== null && range.min > range.max) {
-    const temp = range.min
-    range.min = range.max
-    range.max = temp
+const applyFilters = () => {
+  const filters = {
+    areaMin: areaMinInput.value ? parseInt(areaMinInput.value) : null,
+    areaMax: areaMaxInput.value ? parseInt(areaMaxInput.value) : null,
+    roomsMin: roomsMinInput.value ? parseInt(roomsMinInput.value) : null,
+    roomsMax: roomsMaxInput.value ? parseInt(roomsMaxInput.value) : null,
+    addressQuery: addressInput.value.toLowerCase().trim()
   }
-}
-
-const sanitizeAddress = () => {
-  filters.address = filters.address.replace(/[<>]/g, '')
-}
-
-const emitFilters = () => {
-  const filtersToEmit = {
-    area: { ...filters.area },
-    rooms: { ...filters.rooms },
-    address: filters.address.toLowerCase().trim()
-  }
-  emit('filter-change', filtersToEmit)
+  emit('filter-change', filters)
 }
 
 const resetFilters = () => {
-  filters.area.min = null
-  filters.area.max = null
-  filters.rooms.min = null
-  filters.rooms.max = null
-  filters.address = ''
+  areaMinInput.value = ''
+  areaMaxInput.value = ''
+  roomsMinInput.value = ''
+  roomsMaxInput.value = ''
+  addressInput.value = ''
 
   emit('filter-change', {
-    area: { min: null, max: null },
-    rooms: { min: null, max: null },
-    address: ''
+    areaMin: null,
+    areaMax: null,
+    roomsMin: null,
+    roomsMax: null,
+    addressQuery: ''
   })
 }
 
-watch(
-    () => ({ ...filters }),
-    () => {
-      emitFilters()
-    },
-    { deep: true }
-)
+watch([areaMinInput, areaMaxInput, roomsMinInput, roomsMaxInput, addressInput], () => {
+  applyFilters()
+})
 
 defineExpose({
-  filters: toRefs(filters),
   resetFilters,
-  emitFilters
+  applyFilters
 })
 </script>
 
