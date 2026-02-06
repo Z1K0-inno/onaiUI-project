@@ -11,10 +11,10 @@
 ### Установка
 ```bash
 # 1. Клонируйте репозиторий
-git clone https://github.com/Z1K0-inno/real-estate-filter.git
+git clone https://github.com/Z1K0-inno/onaiUI-project.git
 
 # 2. Перейдите в директорию проекта
-cd real-estate-filter
+cd onaiUI-project
 
 # 3. Установите зависимости
 npm install
